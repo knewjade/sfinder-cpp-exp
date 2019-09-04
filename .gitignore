@@ -34,3 +34,6 @@
 # User defines
 .idea
 cmake-*
+
+.csv
+.bin
