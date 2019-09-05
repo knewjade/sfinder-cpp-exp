@@ -168,6 +168,23 @@ namespace sfexp {
             out.close();
         }
     }
+
+    void createMarker(const std::string &fileName, const sfinder::Marker &marker) {
+        auto &flags = marker.flags();
+
+        // Create binary
+        std::ofstream out(fileName, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!out) {
+            std::cout << "Failed to open file" << std::endl;
+            return;
+        }
+
+        for (auto flag : flags) {
+            out.write(reinterpret_cast<char *>(&flag), sizeof(sfinder::Marker::FlagType));
+        }
+
+        out.close();
+    }
 }
 
 #endif //SFINDER_EXP_CREATE_HPP

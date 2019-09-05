@@ -39,6 +39,23 @@ namespace sfexp {
             solutions.push_back(solution);
         }
     }
+
+    void openMarker(const std::string &file, std::vector<sfinder::Marker::FlagType> &flags) {
+        std::ifstream fin(file, std::ios::in | std::ios::binary);
+        if (!fin) {
+            std::cout << "Failed to open file" << std::endl;
+            return;
+        }
+
+        while (true) {
+            sfinder::Marker::FlagType flag{};
+            fin.read(reinterpret_cast<char *>(&flag), sizeof(sfinder::Marker::FlagType));
+            if (fin.eof()) {
+                break;
+            }
+            flags.push_back(flag);
+        }
+    }
 }
 
 #endif //SFINDER_EXP_OPEN_HPP
