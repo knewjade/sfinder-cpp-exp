@@ -154,7 +154,7 @@ void find() {
     auto start = std::chrono::system_clock::now();
 
     auto point = 10000;
-    for (int i = 0; i < solutions.size(); ++i) {
+    for (int i = 0, size = solutions.size(); i < size; ++i) {
         auto &solution = solutions[i];
 
         auto vector = std::vector<sfexp::PieceIndex>{};
@@ -168,11 +168,11 @@ void find() {
         if (i % point == point - 1) {
             auto s = i + 1;
             auto elapsed = std::chrono::system_clock::now() - start;
-            auto count = static_cast<double>(std::chrono::duration_cast<std::chrono::minutes>(elapsed).count());
+            auto count = static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
             auto average = count / s;
             std::cout << "count=" << s << " "
                       << "elapsed=" << std::chrono::duration_cast<std::chrono::minutes>(elapsed).count() << "mins "
-                      << "remind=" << average * (solutions.size() - s) << "mins "
+                      << "remind=" << average * (size - s) / 60.0 << "mins "
                       << std::endl;
         }
     }
@@ -196,10 +196,14 @@ void verify() {
             sfinder::Permutation::create<7>(core::kAllPieceType, 3),
     };
     auto permutations = sfinder::Permutations::create(permutation);
+    std::cout << permutations.size() << std::endl;
+
+    auto start = std::chrono::system_clock::now();
 
     int s = 0;
     int f = 0;
-    for (int index = 0; index < permutations.size(); ++index) {
+    int point = 10000;
+    for (int index = 0, size = permutations.size(); index < size; ++index) {
         auto pieces = permutations.pieces(index);
         auto value = toValue(pieces);
         if (!marker.succeed(value)) {
@@ -211,13 +215,20 @@ void verify() {
                 std::cout << std::endl;
             }
 
-            if (f % 1000 == 0) {
-                std::cout << f << " " << std::endl;
-            }
-
             f++;
         } else {
             s++;
+        }
+
+        if (index % point == point - 1) {
+            auto s = index + 1;
+            auto elapsed = std::chrono::system_clock::now() - start;
+            auto count = static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
+            auto average = count / s;
+            std::cout << "count=" << s << " "
+                      << "elapsed=" << std::chrono::duration_cast<std::chrono::minutes>(elapsed).count() << "mins "
+                      << "remind=" << average * (size - s) / 60.0 << "mins "
+                      << std::endl;
         }
     }
 
@@ -233,8 +244,6 @@ void check() {
 
     auto factory = core::Factory::create();
     auto marker = sfinder::Marker(flags);
-    auto moveGenerator = core::srs::MoveGenerator(factory);
-    auto finder = sfinder::perfect_clear::Checker<core::srs::MoveGenerator>(factory, moveGenerator);
 
     // Create permutations
     auto permutation = std::vector<sfinder::Permutation>{
