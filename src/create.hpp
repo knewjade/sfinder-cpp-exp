@@ -83,7 +83,7 @@ namespace sfexp {
             std::ifstream ifs(inputFile);
             if (ifs.fail()) {
                 std::cout << "Failed to open file" << std::endl;
-                return;
+                throw std::runtime_error("Failed to open file: " + inputFile);
             }
 
             // Parse
@@ -105,7 +105,7 @@ namespace sfexp {
             std::ofstream out(outputFile, std::ios::out | std::ios::binary | std::ios::trunc);
             if (!out) {
                 std::cout << "Failed to open file" << std::endl;
-                return;
+                throw std::runtime_error("Failed to open file: " + outputFile);
             }
 
             for (auto &index : pieceIndexes) {
@@ -123,8 +123,8 @@ namespace sfexp {
             // Open file
             std::ifstream ifs(fileName);
             if (ifs.fail()) {
-                std::cout << "Failed to open file" << std::endl;
-                return;
+                std::cout << "Failed to open file: " << fileName << std::endl;
+                throw std::runtime_error("Failed to open file: " + fileName);
             }
 
             // Parse
@@ -158,7 +158,7 @@ namespace sfexp {
             std::ofstream out(outputFile, std::ios::out | std::ios::binary | std::ios::trunc);
             if (!out) {
                 std::cout << "Failed to open file" << std::endl;
-                return;
+                throw std::runtime_error("Failed to open file: " + outputFile);
             }
 
             for (auto &solution : solutions) {
@@ -176,7 +176,7 @@ namespace sfexp {
         std::ofstream out(fileName, std::ios::out | std::ios::binary | std::ios::trunc);
         if (!out) {
             std::cout << "Failed to open file" << std::endl;
-            return;
+            throw std::runtime_error("Failed to open file: " + fileName);
         }
 
         for (auto flag : flags) {

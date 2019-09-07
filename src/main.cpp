@@ -82,6 +82,7 @@ void find(
     sfexp::createBits(output, bits);
 }
 
+template<int Start, int End>
 void find(
         const std::vector<sfexp::PieceIndex> &indexes,
         const std::vector<sfexp::SolutionVector> &solutions,
@@ -107,7 +108,8 @@ void find(
 
     auto filledKey = field.filledKey();
 
-    for (int index = 0; index < indexes.size(); ++index) {
+    int endIndex = 0 <= End ? End : indexes.size();
+    for (int index = Start; index < endIndex; ++index) {
         auto &pieceIndex = indexes[index];
 
         if ((filledKey & pieceIndex.deletedLine) != pieceIndex.deletedLine) {
@@ -154,12 +156,13 @@ void find(
             filteredSolutions.push_back(solution);
         }
 
-        find(indexes, filteredSolutions, maxDepth, prefixFileName, factory, freeze, selected, depth - 1);
+        find<0, -1>(indexes, filteredSolutions, maxDepth, prefixFileName, factory, freeze, selected, depth - 1);
 
         selected.pop_back();
     }
 }
 
+template<int Start, int End>
 void find(int maxDepth) {
     auto indexes = std::vector<sfexp::PieceIndex>{};
     sfexp::openIndexes("../../bin/index.bin", indexes);
@@ -173,7 +176,7 @@ void find(int maxDepth) {
     auto selected = std::vector<int>{};
     auto field = core::Field{};
 
-    find(indexes, solutions, maxDepth, "../../bin/", factory, field, selected, 10);
+    find<Start, End>(indexes, solutions, maxDepth, "../../bin/", factory, field, selected, 10);
 }
 
 void verify() {
@@ -326,7 +329,15 @@ void check() {
 
 int main() {
 //    create();
-    find(9);
+    find<0, 90>(9);
+//    find<90, 180>(9);
+//    find<180, 270>(9);
+//    find<270, 360>(9);
+//    find<360, 450>(9);
+//    find<450, 540>(9);
+//    find<540, 630>(9);
+//    find<630, 720>(9);
+//    find<720, -1>(9);
 //    verify();
 //    check();
 }
