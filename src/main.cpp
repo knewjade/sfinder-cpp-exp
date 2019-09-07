@@ -1,4 +1,5 @@
 #include <list>
+#include <chrono>
 
 #include "core/bits.hpp"
 #include "sfinder/marker.hpp"
