@@ -169,8 +169,8 @@ namespace sfexp {
         }
     }
 
-    void createMarker(const std::string &fileName, const sfinder::Marker &marker) {
-        auto &flags = marker.flags();
+    void createBits(const std::string &fileName, const sfinder::Bits &bits) {
+        auto &flags = bits.flags();
 
         // Create binary
         std::ofstream out(fileName, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -180,7 +180,7 @@ namespace sfexp {
         }
 
         for (auto flag : flags) {
-            out.write(reinterpret_cast<char *>(&flag), sizeof(sfinder::Marker::FlagType));
+            out.write(reinterpret_cast<char *>(&flag), sizeof(sfinder::Bits::FlagType));
         }
 
         out.close();

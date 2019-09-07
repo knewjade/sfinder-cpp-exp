@@ -7,6 +7,21 @@
 #include "core/types.hpp"
 
 namespace sfexp {
+    int toValue(const std::vector<core::PieceType> &pieces) {
+        int value = 0;
+        auto it = pieces.cbegin();
+
+        value += *it;
+        ++it;
+
+        for (; it != pieces.cend(); ++it) {
+            value *= 7;
+            value += *it;
+        }
+
+        return value;
+    }
+
     constexpr std::array<unsigned, 16> createSlideIndex() noexcept {
         auto arr = std::array<unsigned, 16>{};
         for (int index = 0; index < arr.size(); index++) {

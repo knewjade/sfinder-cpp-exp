@@ -14,121 +14,11 @@
 #include "create.hpp"
 #include "open.hpp"
 #include "pieces.hpp"
-
-int toValue(const std::vector<core::PieceType> &pieces) {
-    int value = 0;
-    auto it = pieces.cbegin();
-
-    value += *it;
-    ++it;
-
-    for (; it != pieces.cend(); ++it) {
-        value *= 7;
-        value += *it;
-    }
-
-    return value;
-}
-
-constexpr std::array<int, 513> createIndexMapping() noexcept {
-    auto array = std::array<int, 513>{};
-    for (unsigned int i = 0; i < 10; ++i) {
-        array[1U << i] = i;
-    }
-    return array;
-}
-
-class Runner {
-public:
-    static constexpr auto kIndexMapping = createIndexMapping();
-
-    Runner(
-            const core::Factory &factory, const core::Field field,
-            sfinder::Marker &marker, core::srs::MoveGenerator &moveGenerator
-    )
-            : factory_(factory), field_(field),
-              marker_(marker), moveGenerator_(moveGenerator), currentOperations_(std::vector<core::PieceType>{}) {
-    }
-
-    void find(std::vector<sfexp::PieceIndex> &operationWithKeys) {
-        auto field = core::Field{field_};
-        currentOperations_.clear();
-        find(field, operationWithKeys, (1U << operationWithKeys.size()) - 1U);
-    }
-
-private:
-    const core::Factory &factory_;
-    const core::Field field_;
-
-    sfinder::Marker &marker_;
-    core::srs::MoveGenerator &moveGenerator_;
-    std::vector<core::PieceType> currentOperations_;
-
-    const int height_ = 4;
-
-    void find(core::Field &field, std::vector<sfexp::PieceIndex> &operationWithKeys, uint16_t initRemainder) {
-        assert(initRemainder != 0);
-
-        auto deletedKey = field.clearLineReturnKey();
-
-        auto remainder = initRemainder;
-        do {
-            auto next = remainder & (remainder - 1U);
-            auto indexBit = remainder & ~next;
-
-            auto index = kIndexMapping[indexBit];
-            assert(0 <= index && index < operationWithKeys.size());
-            auto operation = operationWithKeys[index];
-
-            currentOperations_.push_back(operation.piece);
-
-            auto needDeletedKey = operation.deletedLine;
-            if ((deletedKey & needDeletedKey) == needDeletedKey) {
-                auto originalY = operation.y;
-                auto deletedLines = core::bitCount(core::getUsingKeyBelowY(originalY) & deletedKey);
-
-                auto &blocks = factory_.get(operation.piece, operation.rotate);
-
-                auto x = operation.x;
-                auto y = originalY - deletedLines;
-
-                if (
-                        field.isOnGround(blocks, x, y) &&
-                        field.canPut(blocks, x, y) &&
-                        moveGenerator_.canReach(field, blocks.pieceType, blocks.rotateType, x, y, height_)
-                        ) {
-
-                    auto nextReminder = initRemainder & ~indexBit;
-                    if (nextReminder == 0) {
-                        // Found
-                        assert(currentOperations_.size() == 10);
-
-                        auto value = toValue(currentOperations_);
-                        assert(0 <= value && value < 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7);
-
-                        marker_.set(value, true);
-                    } else {
-                        auto nextField = core::Field{field};
-                        nextField.put(blocks, x, y);
-                        nextField.insertBlackLineWithKey(deletedKey);
-
-                        find(nextField, operationWithKeys, nextReminder);
-                    }
-                }
-            }
-
-            currentOperations_.pop_back();
-
-            remainder = next;
-        } while (remainder != 0);
-
-        field.insertBlackLineWithKey(deletedKey);
-    }
-};
+#include "runner.hpp"
 
 void create() {
     sfexp::createIndexes("../../csv/index.csv", "../../bin/index.bin");
-    sfexp::createSolutions("../../csv/indexed_solutions_10x4_SRS7BAG.csv", "../../bin/solutionsrs.bin");
+    sfexp::createSolutions("../../csv/indexed_solutions_10x4_SRS7sBAG.csv", "../../bin/solutionsrs.bin");
 }
 
 void find() {
@@ -141,14 +31,14 @@ void find() {
     std::cout << solutions.size() << std::endl;
 
     const int max = 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7;
-    auto marker = sfinder::Marker::create(max);
+    auto bits = sfinder::Bits::create(max);
 
     // Runner
     auto factory = core::Factory::create();
     auto moveGenerator = core::srs::MoveGenerator(factory);
     auto currentOperations = std::vector<core::PieceType>{};
     auto field = core::Field{};
-    auto runner = Runner(factory, field, marker, moveGenerator);
+    auto runner = sfexp::Runner(factory, field, bits, moveGenerator);
 
     // run
     auto start = std::chrono::system_clock::now();
@@ -178,7 +68,7 @@ void find() {
     }
 
     // Output
-    sfexp::createMarker("output.bin", marker);
+    sfexp::createBits("output.bin", bits);
 }
 
 void verify() {
@@ -205,7 +95,7 @@ void verify() {
     int point = 10000;
     for (int index = 0, size = permutations.size(); index < size; ++index) {
         auto pieces = permutations.pieces(index);
-        auto value = toValue(pieces);
+        auto value = sfexp::toValue(pieces);
         if (!marker.succeed(value)) {
             auto success = finder.run<false>(core::Field{}, pieces, 10, 4, true);
             if (success) {
@@ -277,7 +167,7 @@ void check() {
     int f = 0;
     for (int index = 0; index < permutations.size(); ++index) {
         auto pieces = permutations.pieces(index);
-        auto value = toValue(pieces);
+        auto value = sfexp::toValue(pieces);
         if (!marker.succeed(value)) {
 //            for (const auto &piece : pieces) {
 //                std::cout << factory.get(piece).name;
@@ -294,7 +184,7 @@ void check() {
 
                 bool success = false;
                 for (const auto &p11 : parse) {
-                    auto value11 = toValue(p11);
+                    auto value11 = sfexp::toValue(p11);
                     if (marker.succeed(value11)) {
                         success = true;
                         break;
@@ -332,6 +222,6 @@ void check() {
 int main() {
 //    create();
 //    find();
-    verify();
+//    verify();
 //    check();
 }
