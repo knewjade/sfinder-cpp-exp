@@ -1,15 +1,13 @@
 #include <list>
+#include <chrono>
 
 #include "core/bits.hpp"
 #include "sfinder/marker.hpp"
 #include "sfinder/permutations.hpp"
 #include "sfinder/lookup.hpp"
-#include "sfinder/perfect_clear/full_finder.hpp"
 #include "sfinder/perfect_clear/checker.hpp"
 
 #include "core/field.hpp"
-#include "core/factory.hpp"
-#include "core/pieces.hpp"
 
 #include "create.hpp"
 #include "open.hpp"
@@ -18,7 +16,7 @@
 
 void create() {
     sfexp::createIndexes("../../csv/index.csv", "../../bin/index.bin");
-    sfexp::createSolutions("../../csv/indexed_solutions_10x4_SRS7sBAG.csv", "../../bin/solutionsrs.bin");
+    sfexp::createSolutions("../../csv/indexed_solutions_10x4_SRS7BAG.csv", "../../bin/indexed_solutions_10x4_SRS7BAG.bin");
 }
 
 void find() {
@@ -27,7 +25,7 @@ void find() {
     std::cout << indexes.size() << std::endl;
 
     auto solutions = std::vector<sfexp::Solution>{};
-    sfexp::openSolutions("../../bin/solutionsrs.bin", solutions);
+    sfexp::openSolutions("../../bin/indexed_solutions_10x4_SRS7BAG.bin", solutions);
     std::cout << solutions.size() << std::endl;
 
     const int max = 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7;
@@ -220,7 +218,7 @@ void check() {
 }
 
 int main() {
-//    create();
+    create();
 //    find();
 //    verify();
 //    check();

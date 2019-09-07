@@ -24,7 +24,7 @@ namespace sfexp {
 
     constexpr std::array<unsigned, 16> createSlideIndex() noexcept {
         auto arr = std::array<unsigned, 16>{};
-        for (int index = 0; index < arr.size(); index++) {
+        for (int index = 0, size = arr.size(); index < size; index++) {
             arr[index] = 4 * (15 - index);
         }
         return arr;
@@ -35,7 +35,7 @@ namespace sfexp {
     class PiecesValue {
     public:
         static uint64_t lower(const std::vector<core::PieceType> &pieces) {
-            auto size = pieces.size();
+            int size = pieces.size();
             assert(size <= 16);
 
             uint64_t value = 0ULL;
@@ -48,7 +48,7 @@ namespace sfexp {
         }
 
         static uint64_t upper(const std::vector<core::PieceType> &pieces) {
-            auto size = pieces.size();
+            int size = pieces.size();
             assert(size <= 16);
 
             uint64_t value = (0b10000ULL << kSlideIndex[size]) - 1ULL;
