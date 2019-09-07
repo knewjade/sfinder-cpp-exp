@@ -16,34 +16,47 @@
 
 void create() {
     sfexp::createIndexes("../../csv/index.csv", "../../bin/index.bin");
-    sfexp::createSolutions("../../csv/indexed_solutions_10x4_SRS7BAG.csv", "../../bin/indexed_solutions_10x4_SRS7BAG.bin");
+    sfexp::createSolutions(
+            "../../csv/indexed_solutions_10x4_SRS7BAG.csv",
+            "../../bin/indexed_solutions_10x4_SRS7BAG.bin"
+    );
 }
 
-void find() {
-    auto indexes = std::vector<sfexp::PieceIndex>{};
-    sfexp::openIndexes("../../bin/index.bin", indexes);
-    std::cout << indexes.size() << std::endl;
+void find(
+        const core::Factory &factory,
+        const core::Field &field,
+        const std::vector<sfexp::PieceIndex> &indexes,
+        const std::vector<sfexp::SolutionVector> &solutions,
+        int maxDepth,
+        const std::string &prefixFileName
+) {
+    auto output = prefixFileName + "output.bin";
+    std::cout << output << std::endl;
 
-    auto solutions = std::vector<sfexp::Solution>{};
-    sfexp::openSolutions("../../bin/indexed_solutions_10x4_SRS7BAG.bin", solutions);
+    std::ifstream ifs(output);
+    if (ifs.is_open()) {
+        std::cout << "already exists. skip" << std::endl;
+        return;
+    }
+
     std::cout << solutions.size() << std::endl;
+    std::cout << field.toString(4) << std::endl;
 
-    const int max = 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7 * 7;
+    const int max = static_cast<int>(std::pow(7, maxDepth));
     auto bits = sfinder::Bits::create(max);
 
     // Runner
-    auto factory = core::Factory::create();
     auto moveGenerator = core::srs::MoveGenerator(factory);
     auto currentOperations = std::vector<core::PieceType>{};
-    auto field = core::Field{};
     auto runner = sfexp::Runner(factory, field, bits, moveGenerator);
 
     // run
     auto start = std::chrono::system_clock::now();
 
-    auto point = 10000;
+    int point = solutions.size() / 20;
     for (int i = 0, size = solutions.size(); i < size; ++i) {
         auto &solution = solutions[i];
+        assert(solution.size() == maxDepth);
 
         auto vector = std::vector<sfexp::PieceIndex>{};
         for (const auto &index : solution) {
@@ -66,7 +79,101 @@ void find() {
     }
 
     // Output
-    sfexp::createBits("output.bin", bits);
+    sfexp::createBits(output, bits);
+}
+
+void find(
+        const std::vector<sfexp::PieceIndex> &indexes,
+        const std::vector<sfexp::SolutionVector> &solutions,
+        int maxDepth,
+        const std::string &prefixFileName,
+        const core::Factory &factory,
+        const core::Field &field,
+        std::vector<int> &selected,
+        int depth
+) {
+    if (depth == maxDepth) {
+        auto v = std::vector<int>(selected.cbegin(), selected.cend());
+        std::sort(v.begin(), v.end());
+
+        auto s = prefixFileName;
+        for (const auto &item : v) {
+            s += std::to_string(item) + "_";
+        }
+
+        find(factory, field, indexes, solutions, maxDepth, s);
+        return;
+    }
+
+    auto filledKey = field.filledKey();
+
+    for (int index = 0; index < indexes.size(); ++index) {
+        auto &pieceIndex = indexes[index];
+
+        if ((filledKey & pieceIndex.deletedLine) != pieceIndex.deletedLine) {
+            continue;
+        }
+
+        auto mino = core::Field{field};
+        auto &blocks = factory.get(pieceIndex.piece, pieceIndex.rotate);
+        mino.put(blocks, pieceIndex.x, pieceIndex.y);
+        mino.insertWhiteLineWithKey(pieceIndex.deletedLine);
+
+        if (!field.canMerge(mino)) {
+            continue;
+        }
+
+        {
+            auto freeze2 = core::Field{field};
+            auto deletedKey = freeze2.clearLineReturnKey();
+            auto slideY = core::bitCount(deletedKey & core::getUsingKeyBelowY(pieceIndex.y + blocks.minY));
+            auto y = pieceIndex.y - slideY;
+            if (!freeze2.canPut(blocks, pieceIndex.x, y) || !freeze2.isOnGround(blocks, pieceIndex.x, y)) {
+                continue;
+            }
+        }
+
+        auto freeze = core::Field{field};
+        freeze.merge(mino);
+
+        selected.push_back(index);
+
+        // Filter solutions
+        auto filteredSolutions = std::vector<sfexp::SolutionVector>{};
+        for (auto solution : solutions) {
+            if (!std::binary_search(solution.cbegin(), solution.cend(), index)) {
+                continue;
+            }
+
+            auto itrNewEnd = std::remove_if(
+                    solution.begin(), solution.end(), [&](int i) -> bool { return i == index; }
+            );
+            solution.erase(itrNewEnd, solution.end());
+            assert(solution.size() == depth - 1);
+
+            filteredSolutions.push_back(solution);
+        }
+
+        find(indexes, filteredSolutions, maxDepth, prefixFileName, factory, freeze, selected, depth - 1);
+
+        selected.pop_back();
+    }
+}
+
+void find(int maxDepth) {
+    auto indexes = std::vector<sfexp::PieceIndex>{};
+    sfexp::openIndexes("../../bin/index.bin", indexes);
+    std::cout << indexes.size() << std::endl;
+
+    auto solutions = std::vector<sfexp::SolutionVector>{};
+    sfexp::openSolutions("../../bin/indexed_solutions_10x4_SRS7BAG.bin", solutions);
+    std::cout << solutions.size() << std::endl;
+
+    auto factory = core::Factory::create();
+    auto selected = std::vector<int>{};
+    auto field = core::Field{};
+
+    find(indexes, solutions, maxDepth, "../../bin/", factory, field, selected, 10);
 }
 
 void verify() {
@@ -218,8 +325,8 @@ void check() {
 }
 
 int main() {
-    create();
-//    find();
+//    create();
+    find(9);
 //    verify();
 //    check();
 }

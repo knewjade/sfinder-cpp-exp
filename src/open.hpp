@@ -23,7 +23,7 @@ namespace sfexp {
         }
     }
 
-    void openSolutions(const std::string &file, std::vector<Solution> &solutions) {
+    void openSolutions(const std::string &file, std::vector<std::vector<uint16_t>> &solutions) {
         std::ifstream fin(file, std::ios::in | std::ios::binary);
         if (!fin) {
             std::cout << "Failed to open file" << std::endl;
@@ -36,7 +36,9 @@ namespace sfexp {
             if (fin.eof()) {
                 break;
             }
-            solutions.push_back(solution);
+
+            std::vector<uint16_t> vector(solution.cbegin(), solution.cend());
+            solutions.push_back(vector);
         }
     }
 

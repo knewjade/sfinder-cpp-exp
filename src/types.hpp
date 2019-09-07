@@ -12,6 +12,7 @@ namespace sfexp {
     };
 
     using Solution = std::array<uint16_t, 10>;
+    using SolutionVector = std::vector<uint16_t>;
 }
 
 #endif //SFINDER_EXP_TYPES_HPP
