@@ -1,5 +1,8 @@
 #include <list>
 #include <chrono>
+#include <thread>
+#include <csignal>
+#include <cmath>
 
 #include "core/bits.hpp"
 #include "sfinder/marker.hpp"
@@ -13,6 +16,21 @@
 #include "open.hpp"
 #include "pieces.hpp"
 #include "runner.hpp"
+
+bool isAbort = false;
+
+void signalHandler(int signo) {
+    if (signo == SIGUSR1) {
+        printf("received SIGUSR1\n");
+    } else if (signo == SIGKILL) {
+        printf("received SIGKILL\n");
+    } else if (signo == SIGSTOP) {
+        printf("received SIGSTOP\n");
+    } else if (signo == SIGTERM) {
+        printf("received SIGTERM\n");
+    }
+    isAbort = true;
+}
 
 void create() {
     sfexp::createIndexes("../../csv/index.csv", "../../bin/index.bin");
@@ -30,6 +48,8 @@ void find(
         int maxDepth,
         const std::string &prefixFileName
 ) {
+    std::cout << "---" << std::endl;
+
     auto output = prefixFileName + "output.bin";
     std::cout << output << std::endl;
 
@@ -40,7 +60,7 @@ void find(
     }
 
     std::cout << solutions.size() << std::endl;
-    std::cout << field.toString(4) << std::endl;
+//    std::cout << field.toString(4) << std::endl;
 
     const int max = static_cast<int>(std::pow(7, maxDepth));
     auto bits = sfinder::Bits::create(max);
@@ -53,7 +73,7 @@ void find(
     // run
     auto start = std::chrono::system_clock::now();
 
-    int point = solutions.size() / 20;
+    int point = std::max<int>(solutions.size() / 3, 10);
     for (int i = 0, size = solutions.size(); i < size; ++i) {
         auto &solution = solutions[i];
         assert(solution.size() == maxDepth);
@@ -93,6 +113,12 @@ void find(
         std::vector<int> &selected,
         int depth
 ) {
+    if (isAbort) {
+        return;
+    }
+
+    assert(!solutions.empty());
+
     if (depth == maxDepth) {
         auto v = std::vector<int>(selected.cbegin(), selected.cend());
         std::sort(v.begin(), v.end());
@@ -116,7 +142,7 @@ void find(
             continue;
         }
 
-        auto mino = core::Field{field};
+        auto mino = core::Field{};
         auto &blocks = factory.get(pieceIndex.piece, pieceIndex.rotate);
         mino.put(blocks, pieceIndex.x, pieceIndex.y);
         mino.insertWhiteLineWithKey(pieceIndex.deletedLine);
@@ -156,22 +182,20 @@ void find(
             filteredSolutions.push_back(solution);
         }
 
-        find<0, -1>(indexes, filteredSolutions, maxDepth, prefixFileName, factory, freeze, selected, depth - 1);
+        if (!filteredSolutions.empty()) {
+            find<0, -1>(indexes, filteredSolutions, maxDepth, prefixFileName, factory, freeze, selected, depth - 1);
+        }
 
         selected.pop_back();
     }
 }
 
 template<int Start, int End>
-void find(int maxDepth) {
-    auto indexes = std::vector<sfexp::PieceIndex>{};
-    sfexp::openIndexes("../../bin/index.bin", indexes);
-    std::cout << indexes.size() << std::endl;
-
-    auto solutions = std::vector<sfexp::SolutionVector>{};
-    sfexp::openSolutions("../../bin/indexed_solutions_10x4_SRS7BAG.bin", solutions);
-    std::cout << solutions.size() << std::endl;
-
+void find(
+        const std::vector<sfexp::PieceIndex> &indexes,
+        const std::vector<sfexp::SolutionVector> &solutions,
+        int maxDepth
+) {
     auto factory = core::Factory::create();
     auto selected = std::vector<int>{};
     auto field = core::Field{};
@@ -196,11 +220,11 @@ void verify() {
     auto permutations = sfinder::Permutations::create(permutation);
     std::cout << permutations.size() << std::endl;
 
-    auto start = std::chrono::system_clock::now();
+//    auto start = std::chrono::system_clock::now();
 
     int s = 0;
     int f = 0;
-    int point = 10000;
+//    int point = 10000;
     for (int index = 0, size = permutations.size(); index < size; ++index) {
         auto pieces = permutations.pieces(index);
         auto value = sfexp::toValue(pieces);
@@ -218,16 +242,16 @@ void verify() {
             s++;
         }
 
-        if (index % point == point - 1) {
-            auto s = index + 1;
-            auto elapsed = std::chrono::system_clock::now() - start;
-            auto count = static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
-            auto average = count / s;
-            std::cout << "count=" << s << " "
-                      << "elapsed=" << std::chrono::duration_cast<std::chrono::minutes>(elapsed).count() << "mins "
-                      << "remind=" << average * (size - s) / 60.0 << "mins "
-                      << std::endl;
-        }
+//        if (index % point == point - 1) {
+//            auto s = index + 1;
+//            auto elapsed = std::chrono::system_clock::now() - start;
+//            auto count = static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
+//            auto average = count / s;
+//            std::cout << "count=" << s << " "
+//                      << "elapsed=" << std::chrono::duration_cast<std::chrono::minutes>(elapsed).count() << "mins "
+//                      << "remind=" << average * (size - s) / 60.0 << "mins "
+//                      << std::endl;
+//        }
     }
 
     std::cout << "-------" << std::endl;
@@ -328,16 +352,59 @@ void check() {
 }
 
 int main() {
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
+
 //    create();
-    find<0, 90>(9);
-//    find<90, 180>(9);
-//    find<180, 270>(9);
-//    find<270, 360>(9);
-//    find<360, 450>(9);
-//    find<450, 540>(9);
-//    find<540, 630>(9);
-//    find<630, 720>(9);
-//    find<720, -1>(9);
+
+// 9
+//    find<0, -1>(9);
+
+// 8
+//    const int N = 7;
+//    std::array<std::thread, N> threads;
+//    threads[0] = std::thread([&]() { find<0, 100>(indexes, solutions, 8); });
+//    threads[1] = std::thread([&]() { find<100, 180>(indexes, solutions, 8); });
+//    threads[2] = std::thread([&]() { find<180, 250>(indexes, solutions, 8); });
+//    threads[3] = std::thread([&]() { find<250, 350>(indexes, solutions, 8); });
+//    threads[4] = std::thread([&]() { find<350, 480>(indexes, solutions, 8); });
+//    threads[5] = std::thread([&]() { find<480, 620>(indexes, solutions, 8); });
+//    threads[6] = std::thread([&]() { find<620, -1>(indexes, solutions, 8); });
+
 //    verify();
 //    check();
+//
+    auto indexes = std::vector<sfexp::PieceIndex>{};
+    sfexp::openIndexes("../../bin/index.bin", indexes);
+    std::cout << indexes.size() << std::endl;
+
+    auto solutions = std::vector<sfexp::SolutionVector>{};
+    sfexp::openSolutions("../../bin/indexed_solutions_10x4_SRS7BAG.bin", solutions);
+    std::cout << solutions.size() << std::endl;
+
+    find<0, 50>(indexes, solutions, 7);
+
+    /**
+    const int N = 1;
+    std::array<std::thread, N> threads;
+    threads[0] = std::thread([&]() { find<0, 50>(indexes, solutions, 7); });
+//    threads[1] = std::thread([&]() { find<50, 100>(indexes, solutions, 7); });
+//    threads[2] = std::thread([&]() { find<100, 140>(indexes, solutions, 7); });
+//    threads[3] = std::thread([&]() { find<140, 180>(indexes, solutions, 7); });
+//    threads[4] = std::thread([&]() { find<180, 220>(indexes, solutions, 7); });
+//    threads[5] = std::thread([&]() { find<220, 260>(indexes, solutions, 7); });
+//    threads[6] = std::thread([&]() { find<260, 310>(indexes, solutions, 7); });
+//    threads[7] = std::thread([&]() { find<310, 370>(indexes, solutions, 7); });
+//    threads[8] = std::thread([&]() { find<370, 420>(indexes, solutions, 7); });
+//    threads[9] = std::thread([&]() { find<420, 480>(indexes, solutions, 7); });
+//    threads[10] = std::thread([&]() { find<480, 540>(indexes, solutions, 7); });
+//    threads[11] = std::thread([&]() { find<540, 600>(indexes, solutions, 7); });
+//    threads[12] = std::thread([&]() { find<600, 660>(indexes, solutions, 7); });
+//    threads[13] = std::thread([&]() { find<660, 720>(indexes, solutions, 7); });
+//    threads[14] = std::thread([&]() { find<720, -1>(indexes, solutions, 7); });
+
+    for (auto &thread : threads) {
+        thread.join();
+    }
+     */
 }
