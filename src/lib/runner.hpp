@@ -1,5 +1,12 @@
-#ifndef SFINDER_EXP_RUNNER_HPP
-#define SFINDER_EXP_RUNNER_HPP
+#ifndef SFINDER_EXP_LIB_RUNNER_HPP
+#define SFINDER_EXP_LIB_RUNNER_HPP
+
+#include <array>
+#include <vector>
+
+#include "core/factory.hpp"
+#include "core/moves.hpp"
+#include "sfinder/marker.hpp"
 
 #include "pieces.hpp"
 
@@ -96,4 +103,4 @@ namespace sfexp {
     };
 }
 
-#endif //SFINDER_EXP_RUNNER_HPP
+#endif //SFINDER_EXP_LIB_RUNNER_HPP

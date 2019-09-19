@@ -1,7 +1,7 @@
-#ifndef SFINDER_EXP_PARSE_HPP
-#define SFINDER_EXP_PARSE_HPP
+#ifndef SFINDER_EXP_LIB_PARSE_HPP
+#define SFINDER_EXP_LIB_PARSE_HPP
 
-#include <string>
+#include <cstring>
 
 #include "core/types.hpp"
 #include "core/bits.hpp"
@@ -57,4 +57,4 @@ namespace sfexp {
     }
 }
 
-#endif //SFINDER_EXP_PARSE_HPP
+#endif //SFINDER_EXP_LIB_PARSE_HPP

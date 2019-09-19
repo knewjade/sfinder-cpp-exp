@@ -1,5 +1,8 @@
-#ifndef SFINDER_EXP_TYPES_HPP
-#define SFINDER_EXP_TYPES_HPP
+#ifndef SFINDER_EXP_LIB_TYPES_HPP
+#define SFINDER_EXP_LIB_TYPES_HPP
+
+#include <array>
+#include <vector>
 
 namespace sfexp {
     struct PieceIndex {
@@ -15,4 +18,4 @@ namespace sfexp {
     using SolutionVector = std::vector<uint16_t>;
 }
 
-#endif //SFINDER_EXP_TYPES_HPP
+#endif //SFINDER_EXP_LIB_TYPES_HPP
